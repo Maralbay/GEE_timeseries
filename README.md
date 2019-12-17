@@ -4,7 +4,7 @@ For generating a visual timeseries video annotated with image date from optical 
 Problems such as clouds and orbital paths/row differences for locations are handled.
 
 An example is below
-![Image description](link-to-image)
+![TavanTolgoi GIF](https://github.com/Maralbay/GEE_timeseries/blob/master/TavanTolgoiGIF.gif)
 
 
 Link to latest version within GoogleEarthEngine below:
