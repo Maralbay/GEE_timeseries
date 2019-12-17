@@ -1,0 +1,148 @@
+//This is for creating a timeseries
+//from the Landsat 5 (2000-2013) then Landsat 8 (2013 - present) collections
+//
+//author: Maral Bayaraa, Geospatial Intelligence, Satellite Applications Catapult
+//date: May, 2019, version: 2                 [November 2018, version: 1]
+
+
+//****************************************************************************************************
+//change the year here: 
+//Landsat-5 imagery is from 1984 - 2012
+//please choose a year: 
+
+var L5start = 2014;
+var L5end = 2017;
+var L8start = 2012
+var L8end = 2019
+
+//***************************************************************************************************
+
+//define polygon here
+var polygon = TavanTolgoi
+
+// Define orbital paths of satellites - comment out the path/row objects in L5collection and L7collection
+// to begin with to identify "WRS_PATH" and "WRS_ROW" in the image metadata for that location
+//then input these parameters in the below variables: 
+
+// [path, row] = Tavan Tolgoi[131, 30]; UB[131,27]; Erdenet[133,26]; Oyu Tolgoi[130,30]
+var path = 131
+var row = 30
+
+
+// Select Landsat-5 imagery 1984 - 2012
+var L5collection = ee.ImageCollection('LANDSAT/LT05/C01/T1_TOA')
+    .filter(ee.Filter.eq('WRS_PATH', path)) 
+    .filter(ee.Filter.eq('WRS_ROW',row))
+    
+    .filterBounds(polygon)                              //over a given location specified
+    .filter(ee.Filter.calendarRange(L5start,L5end,'year')) //search images from 2013 to 2018
+    .filter(ee.Filter.calendarRange(5, 9, 'month'))   //only summer months April to August - to avoid SNOW
+    
+    .select(['B3', 'B2', 'B1'])
+    .filterMetadata('CLOUD_COVER', 'less_than', 5); //can do: 'equals', 0 or less_than;                    //get RGB true colour bands
+
+
+//Select Landsat-8 imagery 2013-present. NOTE: Band designation changes
+var L8collection = ee.ImageCollection('LANDSAT/LC08/C01/T1_TOA')
+    .filter(ee.Filter.eq('WRS_PATH', path)) 
+    .filter(ee.Filter.eq('WRS_ROW',row))
+    
+    .filterBounds(polygon)                              //over a given location specified
+    .filter(ee.Filter.calendarRange(L8start,L8end,'year')) //search images from 2013 to 2018
+    .filter(ee.Filter.calendarRange(5, 9, 'month'))   //only summer months April to August - to avoid SNOW
+      
+   //select RGB true colour bands
+    .select(['B4', 'B3', 'B2'],   //OLD name - Landsat8 bands
+            ['B3', 'B2', 'B1'])  //new name         
+    .filterMetadata('CLOUD_COVER', 'less_than', 10); //can do: 'equals', 0 or less_than
+   
+
+      
+print('L8',L8collection)
+print('L5',L5collection)
+Map.addLayer(L5collection,{bands:['B3','B2','B1'], min : 0, max: 0.8}, 'L5', false);
+
+
+//Merge the two collections
+var AllLandsatCollection = L5collection.merge(L8collection)
+                                      .sort('system:time_start');//sort the images by date
+print('All coll',AllLandsatCollection);
+
+//*********** getting date of an image
+var Landsat_vid = AllLandsatCollection.map(function(image){
+      var start = ee.Date(image.get('system:time_start'))
+      var label = start.format('YYYY-MM').cat('-')
+      
+      return image.visualize({
+      bands:['B3','B2','B1'], 
+      min : 0, max: 0.8
+                            }).set({label:label})
+                                                          });
+
+
+
+//***************
+//Get external annotate package
+var text = require('users/gena/packages:text')
+
+
+// annotate each of the images
+var annotations = [
+  {
+    position: 'left', 
+    offset: '1%', 
+    margin: '1%', 
+    property: 'label', 
+    scale: Map.getScale()*1.2  //how big the label to be 
+                                // make sure to have the map at a scale required
+  }
+]
+
+Landsat_vid = Landsat_vid.map(function(image) {
+  return text.annotateImage(image, {}, polygon, annotations)
+});
+
+/*
+//Make the data 8bit
+var AllLandsatCollection8bit = Landsat_vid.map(function(image) {
+      return image.multiply(512).uint8()
+                                        });
+*/
+
+
+
+///PLAY WITH STRETCH :
+var imageStretchTest = Landsat_vid.first();
+Map.addLayer(imageStretchTest, {bands: ['vis-red','vis-green','vis-blue'],min : 0, max: 100}, 'first image', false);
+
+
+// /*
+//apply the stretch to final collection:
+var FinalLandsats = Landsat_vid.map(function(image){
+  
+  //visualisation of data is now 8 bit with 0 to 255
+  return image.visualize({bands: ['vis-red','vis-green','vis-blue'], min : 0, max: 100})
+});
+// */
+/////////////////
+print('finalLandsats',FinalLandsats)
+  
+//how to visualise the imagery
+Map.addLayer(FinalLandsats);
+Map.centerObject(polygon)
+//print(FinalLandsats)
+
+ //    
+ /* 
+//  COMMENT A WHOLE BLOCK OUT to export                                        
+//Export (make sure the data has been converted to 8bit)
+Export.video.toDrive({
+  collection: FinalLandsats,
+  description: 'Beira_moz_v1',
+  dimensions: 1440, //start off at 720 then do higher like 2160 dimensions
+  framesPerSecond: 3,
+  region: polygon
+});
+
+
+// */
