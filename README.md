@@ -3,7 +3,8 @@ For generating a visual timeseries video annotated with image date from optical 
 
 Problems such as clouds and orbital paths/row differences for locations are handled.
 
-An example is below
+An example is below: 
+
 ![TavanTolgoi GIF](https://github.com/Maralbay/GEE_timeseries/blob/master/TavanTolgoiGIF.gif)
 
 
