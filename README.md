@@ -9,5 +9,5 @@ An example is below:
 
 
 Link to latest version within GoogleEarthEngine below:
-https://code.earthengine.google.com/ca46c2e5950cb3086978b533792227fb 
+https://code.earthengine.google.com/c36a7dde387f9f529932ebd30362bd88
 
